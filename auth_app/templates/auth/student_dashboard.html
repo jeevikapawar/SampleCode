@@ -1,0 +1,37 @@
+{% extends 'layouts/app.html' %}
+
+{% block content %}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Student Dashboard</title>
+    <!-- Add Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <h1>Dashboard</h1>
+    <canvas id="attendanceChart"></canvas>
+
+    <script>
+        var ctx = document.getElementById('attendanceChart').getContext('2d');
+        var attendanceChart = new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: ['Present', 'Absent'],
+                datasets: [{
+                    label: 'Attendance',
+                    data: [{{present_count}} , {{absent_count}}]
+                    backgroundColor: ['green', 'red'],
+                }]
+            }
+        });
+    </script>
+    <a href="{% url 'logout' %}" class="btn btn-dark">Logout</a>
+</body>
+</html>
+
+
+
+
+{% endblock %}
