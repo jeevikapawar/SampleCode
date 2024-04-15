@@ -38,7 +38,11 @@ def clean_username(self):
         return username
     
 # Your views can then use this form for registration or other purposes
-@auth
+
+def index_view(request):
+    return render(request, 'auth/index.html')
+
+@guest
 def register_student(request):
     if request.method == 'POST':
         username = request.POST['username']
@@ -62,8 +66,7 @@ def register_student(request):
         return render(request, 'auth/student_register.html')
 
 #TEACHER REGISTRATION PAGE
-@auth
-
+@guest
 def register_teacher(request):
     if request.method == 'POST':
         username = request.POST['username']
@@ -85,50 +88,60 @@ def register_teacher(request):
 def login_view(request):
     if request.method == 'POST':
         form = AuthenticationForm(request, data=request.POST)
+        
         if form.is_valid():
             username = request.POST.get('username')
             password = request.POST.get('password')
             user = authenticate(request, username=username, password=password)
             #user = form.get_user()
-            print("user: ", user)
-            login(request,user)
-            print("post login")
-            #redirecting to student dashboard
-            if user.is_superuser or user.is_staff:
-                return redirect('teacher_dashboard')
+            if user is not None:
+                print("user: is authenticated")
+                print("user: is_authenticated", user.is_authenticated)
+                login(request,user)
+                if not user.is_superuser:
+                    print("I'm Student: ",user.get_username)
+                    return redirect('student_dashboard')
+                else:
+                    print("I'm Teacher: ",user.get_username)
+                    return redirect('teacher_dashboard')
+            # login(request,user)
             else:
-                return redirect('student_dashboard')
+                print("user: is not authenticated")
 
     else:
         form = AuthenticationForm()
 
     return render(request, 'auth/login.html', {'form': form})
 
+#def dummy_view(request):
+    return HttpResponse("<H1>user<H1>")
+
 #creating separate dashboards for students and teachers.
 @auth
-
 def student_dashboard(request):
-    student = Student.objects.get(user=request.user)
+
+    student_info = Student.objects.get(user=request.user)
+    print("Student:", student_info)
     semesters = Semester.objects.all()
-    classes = Class.objects.filter(student=student)
+    classes = Class.objects.all()
     print("student dashboard")
-    attendance_records = AttendanceRecord.objects.filter(student=student)
+    attendance_records = AttendanceRecord.objects.filter(student=student_info)
     logger = logging.getLogger(__name__)
     logger.debug("Entering student_dashboard view")
-    
+    print("PRint something")
     if not request.user.is_authenticated:
         logger.warning("User not authenticated, redirecting to login")
         return redirect('login')
     try:
-        student = Student.objects.get(user=request.user)
-        logger.debug(f"Student found: {student}")
-        return render(request, 'auth/student_dashboard.html', {'student': student})
+        #student = Student.objects.get(user=request.user)
+        logger.debug(f"Student found: {student_info}")
+        return render(request, 'auth/student_dashboard.html', {'student': student_info})
     except Student.DoesNotExist:
         logger.error("No student associated with this user")
     user = request.user
     if user.is_authenticated:
         try:
-            student = Student.objects.get(user=user)
+            #student_info = Student.objects.get(user=user)
             return render(request, 'auth/student_dashboard.html')
         except Student.DoesNotExist:
             pass
@@ -164,9 +177,7 @@ def student_dashboard(request):
     return HttpResponse("Some default response or error page")
 
     
-
 @auth
-
 def teacher_dashboard(request):
     logger = logging.getLogger(__name__)
     logger.debug("Entering teacher_dashboard view")
